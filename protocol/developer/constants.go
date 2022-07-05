@@ -7,7 +7,22 @@
 // Changes may cause incorrect behavior and will be lost if the code is regenerated.
 // DO NOT EDIT.
 
-package initial
+package developer
 
 const host = "http://localhost:3000"
+
+type ProductReceived string
+
+const (
+	ProductReceivedModel ProductReceived = "model"
+	ProductReceivedRaw ProductReceived = "raw"
+)
+
+// PossibleProductReceivedValues returns the possible values for the ProductReceived const type.
+func PossibleProductReceivedValues() []ProductReceived {
+	return []ProductReceived{	
+		ProductReceivedModel,
+		ProductReceivedRaw,
+	}
+}
 

@@ -1,4 +1,4 @@
-module github.com/tadelesh/go-dpg-poc/evolution/service/update
+module github.com/tadelesh/go-dpg-poc/protocol/developer
 
 go 1.18
 
