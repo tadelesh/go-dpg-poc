@@ -103,7 +103,8 @@ func TestRawLRO(t *testing.T) {
 	require.NoError(t, err)
 	resp, err := poller.PollUntilDone(context.Background(), nil)
 	require.NoError(t, err)
-	require.Equal(t, resp.(map[string]interface{})["received"].(string), "raw")
+	result := gjson.ParseBytes(resp)
+	require.Equal(t, result.Get("received").String(), "raw")
 }
 
 // HandwrittenModelLRO - HandwrittenModelLRO
@@ -121,8 +122,6 @@ func TestGlassBreaker(t *testing.T) {
 	client := NewGlassBreakerClient(pl)
 	resp, err := client.Do(context.Background(), "/servicedriven/glassbreaker", http.MethodGet, nil)
 	require.NoError(t, err)
-	value := &map[string]interface{}{}
-	err = json.Unmarshal(resp, value)
-	require.NoError(t, err)
-	require.Equal(t, (*value)["message"].(string), "An object was successfully returned")
+	result := gjson.ParseBytes(resp)
+	require.Equal(t, result.Get("message").String(), "An object was successfully returned")
 }

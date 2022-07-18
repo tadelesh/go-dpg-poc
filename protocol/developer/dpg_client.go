@@ -230,15 +230,16 @@ func (client *DPGClient) BeginLro(ctx context.Context, mode string, options *DPG
 	}
 }
 
-func (client *DPGClient) BeginLroRaw(ctx context.Context, mode string, options *LRORequestOptions) (*runtime.Poller[interface{}], error) {
+// TODO, current implementation can not work, need to change azcore.
+func (client *DPGClient) BeginLroRaw(ctx context.Context, mode string, options *LRORequestOptions) (*runtime.Poller[[]byte], error) {
 	if options == nil || options.ResumeToken == "" {
 		resp, err := client.lroRaw(ctx, mode, options)
 		if err != nil {
 			return nil, err
 		}
-		return runtime.NewPoller[interface{}](resp, client.pl, nil)
+		return runtime.NewPoller[[]byte](resp, client.pl, nil)
 	} else {
-		return runtime.NewPollerFromResumeToken[interface{}](options.ResumeToken, client.pl, nil)
+		return runtime.NewPollerFromResumeToken[[]byte](options.ResumeToken, client.pl, nil)
 	}
 }
 
