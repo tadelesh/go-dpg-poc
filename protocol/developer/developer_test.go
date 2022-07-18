@@ -8,7 +8,10 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"strings"
 	"testing"
+
+	"github.com/tidwall/gjson"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/runtime"
@@ -25,18 +28,16 @@ func newDPGClient() *DPGClient {
 // GetRawModel - Read a JSON from a GET
 func TestGetRawModel(t *testing.T) {
 	client := newDPGClient()
-	resp, err := client.GetModelRaw(context.Background(), "raw", &RequestOptions{Header: map[string][]string{"Accept": {"application/json"}}})
+	resp, err := client.GetModelRaw(context.Background(), "raw", nil)
 	require.NoError(t, err)
-	value := &map[string]interface{}{}
-	err = json.Unmarshal(resp, value)
-	require.NoError(t, err)
-	require.Equal(t, (*value)["received"].(string), "raw")
+	result := gjson.ParseBytes(resp)
+	require.Equal(t, result.Get("received").String(), "raw")
 }
 
 // GetHandwrittenModel - Read a model from a GET
 func TestGetHandwrittenModel(t *testing.T) {
 	client := newDPGClient()
-	resp, err := client.GetModelRaw(context.Background(), "model", &RequestOptions{Header: map[string][]string{"Accept": {"application/json"}}})
+	resp, err := client.GetModelRaw(context.Background(), "model", nil)
 	require.NoError(t, err)
 	value := &Product{}
 	err = json.Unmarshal(resp, value)
@@ -47,14 +48,12 @@ func TestGetHandwrittenModel(t *testing.T) {
 // PostRawModel - Post a JSON {"hello": "world!"}
 func TestPostRawModel(t *testing.T) {
 	client := newDPGClient()
-	payload, err := json.Marshal(&map[string]interface{}{"hello": "world!"})
-	require.NoError(t, err)
+	payload := `{"hello": "world!"}`
 	options := RequestOptions{
-		Body:        streaming.NopCloser(bytes.NewReader(payload)),
-		Header:      map[string][]string{"Accept": {"application/json"}},
+		Body:        streaming.NopCloser(strings.NewReader(payload)),
 		ContentType: "application/json",
 	}
-	_, err = client.PostModelRaw(context.Background(), "raw", &options)
+	_, err := client.PostModelRaw(context.Background(), "raw", &options)
 	require.NoError(t, err)
 }
 
@@ -65,7 +64,6 @@ func TestPostHandwrittenModel(t *testing.T) {
 	require.NoError(t, err)
 	options := RequestOptions{
 		Body:        streaming.NopCloser(bytes.NewReader(payload)),
-		Header:      map[string][]string{"Accept": {"application/json"}},
 		ContentType: "application/json",
 	}
 	_, err = client.PostModelRaw(context.Background(), "model", &options)
@@ -75,23 +73,21 @@ func TestPostHandwrittenModel(t *testing.T) {
 // GetRawPages - Read the second page
 func TestGetRawPages(t *testing.T) {
 	client := newDPGClient()
-	pager := client.NewGetPagesPagerRaw("raw", &RequestOptions{Header: map[string][]string{"Accept": {"application/json"}}})
-	result := []interface{}{}
+	pager := client.NewGetPagesPagerRaw("raw", nil)
+	result := []gjson.Result{}
 	for pager.More() {
 		page, err := pager.NextPage(context.Background())
 		require.NoError(t, err)
-		pageValue := &map[string]interface{}{}
-		err = json.Unmarshal(page, pageValue)
-		require.NoError(t, err)
-		result = append(result, ((*pageValue)["values"]).([]interface{})...)
+		pageResult := gjson.ParseBytes(page)
+		result = append(result, pageResult.Get("values").Array()...)
 	}
-	require.Equal(t, result[len(result)-1].(map[string]interface{})["received"].(string), "raw")
+	require.Equal(t, result[len(result)-1].Get("received").String(), "raw")
 }
 
 // GetHandwrittenModelPages - Read the second page
 func TestGetHandwrittenModelPages(t *testing.T) {
 	client := newDPGClient()
-	pager := client.NewGetPagesPagerRaw("model", &RequestOptions{Header: map[string][]string{"Accept": {"application/json"}}})
+	pager := client.NewGetPagesPagerRaw("model", nil)
 	result := []*Product{}
 	for pager.More() {
 		page, err := pager.NextPage(context.Background())
@@ -107,7 +103,7 @@ func TestGetHandwrittenModelPages(t *testing.T) {
 // RawLRO - Read a polling result as JSON
 func TestRawLRO(t *testing.T) {
 	client := newDPGClient()
-	poller, err := client.BeginLroRaw(context.Background(), "raw", &LRORequestOptions{RequestOptions: RequestOptions{Header: map[string][]string{"Accept": {"application/json"}}}})
+	poller, err := client.BeginLroRaw(context.Background(), "raw", nil)
 	require.NoError(t, err)
 	resp, err := poller.PollUntilDone(context.Background(), nil)
 	require.NoError(t, err)
