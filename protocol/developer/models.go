@@ -9,13 +9,24 @@
 
 package developer
 
-import "io"
+import (
+	"io"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/streaming"
+	"strings"
+)
 
 type RequestOptions struct {
 	Header map[string][]string
 	QueryParam map[string]string
 	Body io.ReadSeekCloser
 	ContentType string
+}
+
+func NewJSONRequest(body string) RequestOptions {
+	return RequestOptions{
+		Body:        streaming.NopCloser(strings.NewReader(body)),
+		ContentType: "application/json",
+	}
 }
 
 type LRORequestOptions struct {

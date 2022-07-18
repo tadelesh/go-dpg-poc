@@ -8,7 +8,6 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
-	"strings"
 	"testing"
 
 	"github.com/tidwall/gjson"
@@ -49,10 +48,7 @@ func TestGetHandwrittenModel(t *testing.T) {
 func TestPostRawModel(t *testing.T) {
 	client := newDPGClient()
 	payload := `{"hello": "world!"}`
-	options := RequestOptions{
-		Body:        streaming.NopCloser(strings.NewReader(payload)),
-		ContentType: "application/json",
-	}
+	options := NewJSONRequest(payload)
 	_, err := client.PostModelRaw(context.Background(), "raw", &options)
 	require.NoError(t, err)
 }
