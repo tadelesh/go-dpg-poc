@@ -105,10 +105,14 @@ func TestHandwrittenModelLRO(t *testing.T) {
 	require.Equal(t, *result.Received, ProductReceived("model"))
 }
 
+func newGlassBreakerClient() *DPGClient {
+	pl := runtime.NewPipeline("developer", "1.0.0", runtime.PipelineOptions{}, &azcore.ClientOptions{})
+	return NewGlassBreakerClient(pl)
+}
+
 // DPGGlassBreaker - Call endpoint /servicedriven/glassbreaker with a GET
 func TestGlassBreaker(t *testing.T) {
-	pl := runtime.NewPipeline("developer", "1.0.0", runtime.PipelineOptions{}, &azcore.ClientOptions{})
-	client := NewGlassBreakerClient(pl)
+	client := newGlassBreakerClient()
 	resp, err := client.Do(context.Background(), "/servicedriven/glassbreaker", http.MethodGet, nil)
 	require.NoError(t, err)
 	result := gjson.ParseBytes(resp)
