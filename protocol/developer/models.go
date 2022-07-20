@@ -9,31 +9,6 @@
 
 package developer
 
-import (
-	"io"
-	"github.com/Azure/azure-sdk-for-go/sdk/azcore/streaming"
-	"strings"
-)
-
-type RequestOptions struct {
-	Header map[string][]string
-	QueryParam map[string]string
-	Body io.ReadSeekCloser
-	ContentType string
-}
-
-func NewJSONRequest(body string) RequestOptions {
-	return RequestOptions{
-		Body:        streaming.NopCloser(strings.NewReader(body)),
-		ContentType: "application/json",
-	}
-}
-
-type LRORequestOptions struct {
-	RequestOptions
-	ResumeToken string
-}
-
 // DPGClientBeginLroOptions contains the optional parameters for the DPGClient.BeginLro method.
 type DPGClientBeginLroOptions struct {
 	// Resumes the LRO from the provided token.
@@ -74,7 +49,6 @@ type Product struct {
 }
 
 type ProductResult struct {
-	NextLink *string `json:"nextLink,omitempty"`
-	Values []*Product `json:"values,omitempty"`
+	NextLink *string    `json:"nextLink,omitempty"`
+	Values   []*Product `json:"values,omitempty"`
 }
-

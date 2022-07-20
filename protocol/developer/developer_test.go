@@ -4,9 +4,7 @@
 package developer
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"net/http"
 	"testing"
 
@@ -14,7 +12,6 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/runtime"
-	"github.com/Azure/azure-sdk-for-go/sdk/azcore/streaming"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/stretchr/testify/require"
 )
@@ -36,34 +33,28 @@ func TestGetRawModel(t *testing.T) {
 // GetHandwrittenModel - Read a model from a GET
 func TestGetHandwrittenModel(t *testing.T) {
 	client := newDPGClient()
-	resp, err := client.GetModelRaw(context.Background(), "model", nil)
+	resp, err := client.GetModel(context.Background(), "model", nil)
 	require.NoError(t, err)
-	value := &Product{}
-	err = json.Unmarshal(resp, value)
-	require.NoError(t, err)
-	require.NotNil(t, value.Received, "model")
+	require.NotNil(t, *resp.Received, ProductReceived("model"))
 }
 
 // PostRawModel - Post a JSON {"hello": "world!"}
 func TestPostRawModel(t *testing.T) {
 	client := newDPGClient()
 	payload := `{"hello": "world!"}`
-	options := NewJSONRequest(payload)
-	_, err := client.PostModelRaw(context.Background(), "raw", &options)
+	options := NewJSONStringRequest(payload)
+	resp, err := client.PostModelRaw(context.Background(), "raw", &options)
 	require.NoError(t, err)
+	result := gjson.ParseBytes(resp)
+	require.Equal(t, result.Get("received").String(), "raw")
 }
 
 // PostHandwrittenModel - Pass a model that will serialize as {"hello": "world!"}
 func TestPostHandwrittenModel(t *testing.T) {
 	client := newDPGClient()
-	payload, err := json.Marshal(&Input{Hello: to.Ptr("world!")})
+	resp, err := client.PostModel(context.Background(), "model", Input{Hello: to.Ptr("world!")}, nil)
 	require.NoError(t, err)
-	options := RequestOptions{
-		Body:        streaming.NopCloser(bytes.NewReader(payload)),
-		ContentType: "application/json",
-	}
-	_, err = client.PostModelRaw(context.Background(), "model", &options)
-	require.NoError(t, err)
+	require.Equal(t, *resp.Received, ProductReceived("model"))
 }
 
 // GetRawPages - Read the second page
@@ -83,15 +74,12 @@ func TestGetRawPages(t *testing.T) {
 // GetHandwrittenModelPages - Read the second page
 func TestGetHandwrittenModelPages(t *testing.T) {
 	client := newDPGClient()
-	pager := client.NewGetPagesPagerRaw("model", nil)
+	pager := client.NewGetPagesPager("model", nil)
 	result := []*Product{}
 	for pager.More() {
 		page, err := pager.NextPage(context.Background())
 		require.NoError(t, err)
-		pageValue := &ProductResult{}
-		err = json.Unmarshal(page, pageValue)
-		require.NoError(t, err)
-		result = append(result, pageValue.Values...)
+		result = append(result, page.Values...)
 	}
 	require.Equal(t, *result[len(result)-1].Received, ProductReceived("model"))
 }
@@ -117,6 +105,7 @@ func TestHandwrittenModelLRO(t *testing.T) {
 	require.Equal(t, *result.Received, ProductReceived("model"))
 }
 
+// DPGGlassBreaker - Call endpoint /servicedriven/glassbreaker with a GET
 func TestGlassBreaker(t *testing.T) {
 	pl := runtime.NewPipeline("developer", "1.0.0", runtime.PipelineOptions{}, &azcore.ClientOptions{})
 	client := NewGlassBreakerClient(pl)
