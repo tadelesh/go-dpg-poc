@@ -11,9 +11,9 @@ import (
 
 type RequestOptions struct {
 	Header      http.Header
-	QueryParam  map[string]string
+	QueryParam  map[string]string // type alias and provide set add method
 	Body        io.ReadSeekCloser
-	ContentType string
+	ContentType string // find some way to infer from body
 }
 
 func (options *RequestOptions) AddQueryParam(name, value string) {

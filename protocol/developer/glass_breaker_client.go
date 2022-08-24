@@ -10,6 +10,7 @@ package developer
 
 import (
 	"context"
+	"io"
 	"net/http"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/runtime"
@@ -19,33 +20,30 @@ type GlassBreakerClient struct {
 	pl runtime.Pipeline
 }
 
-func NewGlassBreakerClient(pl runtime.Pipeline) *DPGClient {
-	client := &DPGClient{
+func NewGlassBreakerClient(pl runtime.Pipeline) *GlassBreakerClient {
+	client := &GlassBreakerClient{
 		pl: pl,
 	}
 	return client
 }
 
-func (client *DPGClient) Do(ctx context.Context, urlPath string, httpMethod string, options *RequestOptions) ([]byte, error) {
+func (client *GlassBreakerClient) SendRequest(ctx context.Context, urlPath, httpMethod string, query map[string]string, header http.Header, body io.ReadSeekCloser) ([]byte, error) {
 	req, err := runtime.NewRequest(ctx, httpMethod, runtime.JoinPaths(host, urlPath))
 	if err != nil {
 		return nil, err
 	}
-	if options != nil && options.QueryParam != nil && len(options.QueryParam)>0 {
+	if query != nil && len(query) > 0 {
 		reqQP := req.Raw().URL.Query()
-		for k,v := range(options.QueryParam) {
-			reqQP.Set(k,v)
+		for k, v := range query {
+			reqQP.Set(k, v)
 		}
 		req.Raw().URL.RawQuery = reqQP.Encode()
 	}
-	if options != nil && options.Header != nil && len(options.Header)>0 {
-		req.Raw().Header = options.Header
+	if header != nil && len(header) > 0 {
+		req.Raw().Header = header
 	}
-	if options != nil && options.Body != nil {
-		req.SetBody(options.Body, options.ContentType)
-	}
-	if err != nil {
-		return nil, err
+	if body != nil {
+		req.SetBody(body, req.Raw().Header.Get("Content-Type"))
 	}
 	resp, err := client.pl.Do(req)
 	if err != nil {

@@ -105,7 +105,7 @@ func TestHandwrittenModelLRO(t *testing.T) {
 	require.Equal(t, *result.Received, ProductReceived("model"))
 }
 
-func newGlassBreakerClient() *DPGClient {
+func newGlassBreakerClient() *GlassBreakerClient {
 	pl := runtime.NewPipeline("developer", "1.0.0", runtime.PipelineOptions{}, &azcore.ClientOptions{})
 	return NewGlassBreakerClient(pl)
 }
@@ -113,7 +113,15 @@ func newGlassBreakerClient() *DPGClient {
 // DPGGlassBreaker - Call endpoint /servicedriven/glassbreaker with a GET
 func TestGlassBreaker(t *testing.T) {
 	client := newGlassBreakerClient()
-	resp, err := client.Do(context.Background(), "/servicedriven/glassbreaker", http.MethodGet, nil)
+	resp, err := client.SendRequest(context.Background(), "/servicedriven/glassbreaker", http.MethodGet, nil, nil, nil)
+	require.NoError(t, err)
+	result := gjson.ParseBytes(resp)
+	require.Equal(t, result.Get("message").String(), "An object was successfully returned")
+}
+
+func TestGlassBreakerInDPGClient(t *testing.T) {
+	client := newDPGClient()
+	resp, err := client.SendRequest(context.Background(), "/servicedriven/glassbreaker", http.MethodGet, nil, nil, nil)
 	require.NoError(t, err)
 	result := gjson.ParseBytes(resp)
 	require.Equal(t, result.Get("message").String(), "An object was successfully returned")

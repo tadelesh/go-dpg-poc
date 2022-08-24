@@ -13,6 +13,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"strings"
 
@@ -23,7 +24,7 @@ import (
 
 type DPGClient struct {
 	pl runtime.Pipeline
-}
+} // find a way separate protocol client and model client to make it possible to reuse operation name
 
 // NewDPGClient creates a new instance of DPGClient with the specified values.
 // pl - the pipeline used for sending requests and handling responses.
@@ -326,4 +327,32 @@ func (client *DPGClient) postModelCreateRequestRaw(ctx context.Context, mode str
 		req.SetBody(options.Body, options.ContentType)
 	}
 	return req, nil
+}
+
+func (client *DPGClient) SendRequest(ctx context.Context, urlPath, httpMethod string, query map[string]string, header http.Header, body io.ReadSeekCloser) ([]byte, error) {
+	req, err := runtime.NewRequest(ctx, httpMethod, runtime.JoinPaths(host, urlPath))
+	if err != nil {
+		return nil, err
+	}
+	if query != nil && len(query) > 0 {
+		reqQP := req.Raw().URL.Query()
+		for k, v := range query {
+			reqQP.Set(k, v)
+		}
+		req.Raw().URL.RawQuery = reqQP.Encode()
+	}
+	if header != nil && len(header) > 0 {
+		req.Raw().Header = header
+	}
+	if body != nil {
+		req.SetBody(body, req.Raw().Header.Get("Content-Type"))
+	}
+	resp, err := client.pl.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if !runtime.HasStatusCode(resp, http.StatusOK) {
+		return nil, runtime.NewResponseError(resp)
+	}
+	return runtime.Payload(resp)
 }
